@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('customer_id')
                     ->constrained('customers');
             $table->string('number')->unique();
-            $table->decimal('total_price',10,2);
+            $table->decimal('unit_price',10,2)->default(0);
             $table->enum('status',
                 ['pending','processing','completed','declined'])
                          ->default('pending');

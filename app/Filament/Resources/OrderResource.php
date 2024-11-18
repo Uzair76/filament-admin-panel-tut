@@ -69,15 +69,25 @@ class OrderResource extends Resource
                            ->schema([
                             Select::make('product_id')
                             ->label('Product ID')
-                            ->options(Product::query()->pluck('name', 'id')),
+                            ->options(Product::query()
+                            ->pluck('name', 'id'))
+                            ->required()
+                            ->reactive()
+                            ->afterStateUpdated(fn($state, Forms\Set $set) =>
+    $set('unit_price', Product::find($state)?->price ?? 0)
+                           ),
 
                         TextInput::make('quantity')
                             ->default(1)
                             ->numeric()
                             ->required(),
 
-                        TextInput::make('unit_price')->numeric()
-                            ->required(),
+                            TextInput::make('unit_price')
+                            ->required()
+                            ->default(0)
+                            ->dehydrated(),
+
+
 
                            ])
                         ])
@@ -97,7 +107,7 @@ class OrderResource extends Resource
                 TextColumn::make('customer.id')->searchable()->sortable(),
                 TextColumn::make('status')->searchable()->sortable(),
 
-                TextColumn::make('total_price')
+                TextColumn::make('unit_price')
                     ->searchable()
                     ->sortable()
                     ->summarize([
