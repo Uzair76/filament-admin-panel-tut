@@ -7,5 +7,4 @@ enum orderStatus:string{
     case PROCESSING =   'processing';
     case COMPLETED =   'completed';
     case DECLINED =   'declined';
-
 }

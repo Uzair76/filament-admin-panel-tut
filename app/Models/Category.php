@@ -19,7 +19,7 @@ class Category extends Model
         'is_visible',
         'description',
     ];
-    public function parents():BelongsTo
+    public function parent():BelongsTo
         {
             return $this->belongsTo(Category::class);
         }
@@ -30,6 +30,6 @@ class Category extends Model
         }
     public function products(): BelongsToMany
         {
-            return $this->belongsToMany(Product::class);
+            return $this->belongsToMany(product::class,'category_product');
         }
 }

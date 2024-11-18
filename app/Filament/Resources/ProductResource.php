@@ -25,12 +25,18 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Str;
 
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+
+    protected static ?string $navigationIcon = 'heroicon-o-bolt';
+
+    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationGroup = 'Shop';
 
     public static function form(Form $form): Form
     {
@@ -42,8 +48,19 @@ class ProductResource extends Resource
                     Section::make()
                     ->schema(
                         [
-                            TextInput::make('name'),
-                            TextInput::make('slug'),
+                            TextInput::make('name')
+                            ->required()->live(onBlur:true)
+                            ->unique()
+                            ->afterStateUpdated(function(string $operation, $state, Forms\Set $set){
+
+                                if($operation !== 'create'){
+                                    return;
+                                }
+                                $set('slug',Str::slug($state));
+                            }),
+                            TextInput::make('slug')
+                            ->dehydrated()
+                            ->unique(Product::class,'slug',ignoreRecord:true),
                             MarkdownEditor::make('description')
                             ->columnSpanFull()
 
@@ -78,12 +95,18 @@ class ProductResource extends Resource
                         ->schema(
                             [
                                FileUpload::make('image')
+                               ->imageEditor()
 
                             ])->collapsible(),
                         Section::make('Association')
                         ->schema(
                             [
-                                Select::make('brand_id')->relationship('brand','name')
+                                Select::make('brand_id')->relationship('brand','name')->required(),
+
+                                Select::make('categories')
+                                ->relationship('categories', 'name') // Reference the categories relationship in Product model
+                                ->required()
+                                ->multiple(),
 
                         ])
 
@@ -99,14 +122,23 @@ class ProductResource extends Resource
                 //
                 ImageColumn::make('image'),
                 TextColumn:: make('name'),
+                TextColumn::make('slug'),
                 TextColumn::make('brand.name'),
-                IconColumn::make('is_visible')->boolean()
+                IconColumn::make('is_visible')->boolean(),
+                IconColumn::make('is_feature')->boolean(),
+                TextColumn::make('quantity'),
+                TextColumn::make('price'),
             ])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                // Tables\Actions\EditAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    \Filament\Tables\Actions\ViewAction::make(),
+                    \Filament\Tables\Actions\DeleteAction::make(),
+                    \Filament\Tables\Actions\EditAction::make()
+                ])
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
