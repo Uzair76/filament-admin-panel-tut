@@ -37,7 +37,10 @@ class ProductResource extends Resource
 
     protected static ?int $navigationSort = 1;
     protected static ?string $navigationGroup = 'Shop';
-
+    public static function getNavigationBadge(): ?string
+    {
+            return static::getModel()::count();
+    }
     public static function form(Form $form): Form
     {
         return $form
@@ -69,9 +72,17 @@ class ProductResource extends Resource
                     Section::make()
                     ->schema(
                         [
-                            TextInput::make('sku'),
-                            TextInput::make('price'),
-                            TextInput::make('quantity'),
+                            TextInput::make('sku')
+                            ->label("SKU (Stock Keeping Unit)")
+                                    ->required(),
+                            TextInput::make('price')->numeric()
+                            ->rules('regex:/^\d{1,6}(\.\d{0,2})?$/')
+                            ->required(),
+                            TextInput::make('quantity')
+                            ->numeric()
+                                    ->minValue(0)
+                                    ->maxValue(100)
+                                    ->required(),
                             Select::make('type')->options([
                                 'downloadable'=>ProductTypeEnum::DOWNLOADABLE->value,
                                 'deliverable'=>ProductTypeEnum::DELIVERABLE->value
@@ -86,22 +97,30 @@ class ProductResource extends Resource
                     Section::make('Status')
                     ->schema(
                         [
-                            Toggle::make('is_visible'),
-                            Toggle::make('is_feature'),
+                            Toggle::make('is_visible')
+                            ->label('Visibility')
+                            ->helperText('Enable or disable product visibility')
+                            ->default(true),
+                            Toggle::make('is_feature')->label('Featured')
+                            ->helperText('Enable or disable products featured status'),
                             DatePicker::make('published_at')
+                            ->label('Availability')
+                                    ->default(now())
 
                         ]),
                         Section::make('Image')
                         ->schema(
                             [
                                FileUpload::make('image')
+                               ->directory('form-attachments')
+                               ->preserveFilenames()
+                               ->image()
                                ->imageEditor()
-
-                            ])->collapsible(),
+                       ])->collapsible(),
                         Section::make('Association')
                         ->schema(
                             [
-                                Select::make('brand_id')->relationship('brand','name')->required(),
+                                Select::make('brand_id')->relationship('products','name')->required(),
 
                                 Select::make('categories')
                                 ->relationship('categories', 'name') // Reference the categories relationship in Product model
@@ -121,13 +140,23 @@ class ProductResource extends Resource
             ->columns([
                 //
                 ImageColumn::make('image'),
-                TextColumn:: make('name'),
+                TextColumn:: make('name')
+                ->searchable()
+                ->sortable(),
                 TextColumn::make('slug'),
-                TextColumn::make('brand.name'),
-                IconColumn::make('is_visible')->boolean(),
+                TextColumn::make('brand.name')
+                ->searchable()
+                    ->sortable()
+                    ->toggleable(),
+                IconColumn::make('is_visible') ->sortable()
+                ->toggleable()
+                ->label('Visibility')
+                ->boolean(),
                 IconColumn::make('is_feature')->boolean(),
-                TextColumn::make('quantity'),
-                TextColumn::make('price'),
+                TextColumn::make('quantity')->sortable()
+                ->toggleable(),
+                TextColumn::make('price') ->sortable()
+                ->toggleable(),
             ])
             ->filters([
                 //

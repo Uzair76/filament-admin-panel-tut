@@ -30,6 +30,17 @@ class OrderResource extends Resource
 
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::where('status', '=', 'processing')->count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return static::getModel()::where('status', '=', 'processing')->count() > 10
+            ? 'warning'
+            : 'primary';
+    }
 
     public static function form(Form $form): Form
     {
@@ -48,48 +59,55 @@ class OrderResource extends Resource
 
                             Select::make('customer_id')
                                 ->relationship('customer', 'name')
-                                ->required()
-                            ,
+                                ->searchable()
+                                ->required(),
 
-                            Select::make('type')
+                            TextInput::make('shipping_price')
+                                ->label('Shipping Costs')
+                                ->dehydrated()
+                                ->numeric()
+                                ->required(),
+
+
+                            Select::make('status')
                                 ->options([
-                                    'completed' => orderStatus::COMPLETED->value,
                                     'pending' => orderStatus::PENDING->value,
                                     'processing' => orderStatus::PROCESSING->value,
+                                    'completed' => orderStatus::COMPLETED->value,
                                     'declined' => orderStatus::DECLINED->value,
+                                ])->required(),
 
-                                ])->columnSpanFull(),
 
                             MarkdownEditor::make('notes')->columnSpanFull()
 
                         ])->columns(2),
-                    Wizard\Step::make('item detail')->schema([
-                           Repeater::make('items')
-                           ->relationship()
-                           ->schema([
-                            Select::make('product_id')
-                            ->label('Product ID')
-                            ->options(Product::query()
-                            ->pluck('name', 'id'))
-                            ->required()
-                            ->reactive()
-                            ->afterStateUpdated(fn($state, Forms\Set $set) =>
-    $set('unit_price', Product::find($state)?->price ?? 0)
-                           ),
+                        Wizard\Step::make('item detail')->schema([
 
-                        TextInput::make('quantity')
-                            ->default(1)
-                            ->numeric()
-                            ->required(),
+                            Repeater::make('items')
+                                ->relationship()
+                                ->schema([
 
-                            TextInput::make('unit_price')
-                            ->required()
-                            ->default(0)
-                            ->dehydrated(),
+                                Forms\Components\Select::make('product_id')
+                                        ->label('Product')
+                                        ->options(Product::query()->pluck('name', 'id'))
+                                        ->required()
+                                        ->reactive()
+                                        ->afterStateUpdated(fn ($state, Forms\Set $set) =>
+                                        $set('unit_price', Product::find($state)?->price ?? 0)),
 
+                                Forms\Components\TextInput::make('quantity')
+                                    ->numeric()
+                                    ->live()
+                                    ->dehydrated()
+                                    ->default(1)
+                                    ->required(),
 
-
-                           ])
+                                    Forms\Components\TextInput::make('unit_price')
+                                    ->label('Unit Price')
+                                    ->dehydrated()
+                                    ->numeric()
+                                    ->required(),
+                                ])
                         ])
                     ]
 
@@ -98,14 +116,20 @@ class OrderResource extends Resource
             ]);
     }
 
+
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
                 //
                 TextColumn::make('number')->searchable()->sortable(),
-                TextColumn::make('customer.id')->searchable()->sortable(),
-                TextColumn::make('status')->searchable()->sortable(),
+                TextColumn::make('customer.name')
+                ->searchable()
+                ->sortable()
+                ->toggleable(),
+                TextColumn::make('status')
+                ->searchable()
+                ->sortable(),
 
                 TextColumn::make('unit_price')
                     ->searchable()
