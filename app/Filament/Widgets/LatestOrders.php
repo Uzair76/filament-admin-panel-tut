@@ -26,12 +26,7 @@ class LatestOrders extends BaseWidget
                    TextColumn::make('customer.id')->searchable()->sortable(),
                    TextColumn::make('status')->searchable()->sortable(),
 
-                   TextColumn::make('unit_price')
-                       ->searchable()
-                       ->sortable()
-                       ->summarize([
-                           Tables\Columns\Summarizers\Sum::make()->money()
-                       ]),
+
                    TextColumn::make('created_at')->label('order date')->date()
 
             ]);

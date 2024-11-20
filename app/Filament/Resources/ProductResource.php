@@ -120,7 +120,7 @@ class ProductResource extends Resource
                         Section::make('Association')
                         ->schema(
                             [
-                                Select::make('brand_id')->relationship('products','name')->required(),
+                                Select::make('brand_id')->relationship('brand','name')->required(),
 
                                 Select::make('categories')
                                 ->relationship('categories', 'name') // Reference the categories relationship in Product model
